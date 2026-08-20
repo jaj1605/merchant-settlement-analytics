@@ -1,0 +1,49 @@
+name: dbt CI
+
+# Runs on every pull request. A PR that breaks a model or a data quality control
+# cannot merge — which is the point of putting the controls in CI rather than
+# leaving them to the scheduled run to discover in production.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: build and test dbt project
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint SQL
+        run: sqlfluff lint dbt/models --dialect duckdb
+        continue-on-error: true   # style findings report but do not block; correctness does
+
+      - name: Build synthetic fixture data
+        run: python ingestion/make_fixtures.py --dest data/anonymized
+        # CI never touches real client data. Fixtures reproduce the SHAPE of the
+        # source — including a reversal cycle and an unrecovered error charge — so the
+        # controls are genuinely exercised without any client data in the repo.
+
+      - name: Ingest
+        run: python ingestion/ingest.py --src data/anonymized --db warehouse.duckdb
+
+      - name: dbt build
+        run: cd dbt && dbt build --target dev
+
+      - name: Upload dbt artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-target
+          path: dbt/target/

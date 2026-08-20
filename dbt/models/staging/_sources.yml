@@ -1,0 +1,49 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Faithful landing copy of the merchant's delivery-platform export. Every column
+      is VARCHAR by design — type casting is a transformation and happens in staging,
+      so a source type change can never fail ingestion.
+    schema: raw
+    loaded_at_field: _loaded_at
+
+    freshness:
+      warn_after: {count: 36, period: hour}
+      error_after: {count: 72, period: hour}
+
+    tables:
+      - name: orders
+        description: "One row per customer order. Grain: order."
+
+      - name: transactions_detailed
+        description: >
+          One row per financial transaction event. An order can produce several rows
+          (the order itself, plus later error charges and adjustments), so this is
+          not at order grain.
+
+      - name: transactions_simplified
+        description: Reduced-column view of the same transaction events, kept for cross-checks.
+
+      - name: payout_summary
+        description: >
+          One row per payout date per channel. This is the settlement side of the
+          reconciliation — an independent record of the same money as the orders.
+
+      - name: error_charges
+        description: >
+          One row per error charge or adjustment credit. Charges are deductions for
+          order problems; adjustments are later credits reversing them.
+
+      - name: product_mix
+        description: One row per menu item per channel, aggregated over the export period.
+
+      - name: marketing_promotion
+        description: One row per campaign per day.
+
+      - name: sales_by_time
+        description: Daily sales aggregates supplied by the platform.
+
+      - name: _load_log
+        description: Ingestion audit trail — one row per dataset per pipeline run.

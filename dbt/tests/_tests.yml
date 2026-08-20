@@ -1,0 +1,9 @@
+version: 2
+
+# Severity is set deliberately rather than left at the default. Tests that indicate a
+# broken pipeline stop the build; tests that surface an operational condition warn and
+# let the run continue. Deciding which is which is the fail-closed judgement call.
+tests:
+  - name: assert_orders_settle_within_lag
+    config:
+      severity: warn

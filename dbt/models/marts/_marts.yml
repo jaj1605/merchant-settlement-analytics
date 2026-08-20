@@ -1,0 +1,100 @@
+version: 2
+
+models:
+  - name: fct_transactions
+    description: >
+      Atomic financial fact. Grain is one row per transaction event. order_id is a
+      degenerate dimension and is deliberately NOT unique here — the source records
+      reversal cycles under a single order id.
+    columns:
+      - name: transaction_key
+        description: Primary key. Platform transaction identifier.
+        tests: [unique, not_null]
+      - name: channel_key
+        tests:
+          - relationships:
+              to: ref('dim_channel')
+              field: channel_key
+      - name: transaction_type
+        tests:
+          - accepted_values:
+              values: ['Order', 'Error Charge', 'Adjustment']
+
+  - name: fct_orders
+    description: Grain is one row per order, netting each order's reversal cycle.
+    columns:
+      - name: order_key
+        description: Primary key. Unique after reversal cycles are collapsed.
+        tests: [unique, not_null]
+      - name: channel_key
+        tests:
+          - relationships:
+              to: ref('dim_channel')
+              field: channel_key
+      - name: date_key
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: subtotal
+        tests: [not_null]
+
+  - name: fct_payouts
+    description: Settlement fact. Grain is one row per payout id per channel.
+    columns:
+      - name: payout_key
+        tests: [unique, not_null]
+      - name: payout_status
+        tests:
+          - accepted_values:
+              values: ['PAID']
+      - name: break_reason
+        tests:
+          - accepted_values:
+              values:
+                - 'matched'
+                - 'cutoff/timing - settles pre-window orders'
+                - 'cutoff/timing - settles post-window'
+                - 'unexplained - investigate'
+
+  - name: fct_error_events
+    description: Dispute lifecycle fact. Grain is one row per error charge claim.
+    columns:
+      - name: error_event_key
+        tests: [unique, not_null]
+      - name: claim_type
+        tests:
+          - accepted_values:
+              values: ['item missing', 'food quality', 'incorrect order', 'other']
+      - name: recovery_aging_bucket
+        tests:
+          - accepted_values:
+              values: ['not recovered', '0-3 days', '4-7 days', '8-14 days', '15+ days']
+      - name: charge_amount
+        tests: [not_null]
+
+  - name: dim_date
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: dim_channel
+    columns:
+      - name: channel_key
+        tests: [unique, not_null]
+
+  - name: dim_item
+    description: Grain is one row per item per channel.
+    columns:
+      - name: item_key
+        tests: [unique, not_null]
+      - name: channel_key
+        tests:
+          - relationships:
+              to: ref('dim_channel')
+              field: channel_key
+
+  - name: dim_campaign
+    columns:
+      - name: campaign_key
+        tests: [unique, not_null]
