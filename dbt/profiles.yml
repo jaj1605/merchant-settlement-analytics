@@ -1,9 +1,7 @@
 # Local development profile.
 #
 # DuckDB is the dev warehouse: no credentials, fast iteration, and dbt models are
-# largely portable. The `snowflake` target below is the migration path — fill in
-# credentials and run `dbt build --target snowflake`. Keep secrets in environment
-# variables, never in this file.
+# largely portable. 
 merchant_settlement:
   target: dev
   outputs:
@@ -12,13 +10,4 @@ merchant_settlement:
       path: ../warehouse.duckdb
       threads: 4
 
-    snowflake:
-      type: snowflake
-      account: "{{ env_var('SNOWFLAKE_ACCOUNT', '') }}"
-      user: "{{ env_var('SNOWFLAKE_USER', '') }}"
-      password: "{{ env_var('SNOWFLAKE_PASSWORD', '') }}"
-      role: "{{ env_var('SNOWFLAKE_ROLE', 'TRANSFORMER') }}"
-      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
-      database: "{{ env_var('SNOWFLAKE_DATABASE', 'MERCHANT_SETTLEMENT') }}"
-      schema: "{{ env_var('SNOWFLAKE_SCHEMA', 'PUBLIC') }}"
-      threads: 8
+  
