@@ -1,7 +1,7 @@
 # Local development profile.
 #
 # DuckDB is the dev warehouse: no credentials, fast iteration, and dbt models are
-# largely portable. 
+# largely portable.
 merchant_settlement:
   target: dev
   outputs:
@@ -9,5 +9,3 @@ merchant_settlement:
       type: duckdb
       path: ../warehouse.duckdb
       threads: 4
-
-  

@@ -8,8 +8,18 @@ A full year of settlement data, reconciled two ways:
 
 - **Every weekly payout reconciles to $0.00** — all 72 payouts, stated components against stated net total.
 - **91.9% first-pass match** on the independent order-level roll-up (68 of 74 payout-date × channel groups). All 6 breaks classify to period-boundary cutoff timing. **Zero unexplained.**
-- **Only 57.3% of error charges are recovered.** Of $1,027 deducted for order problems, $438.60 never came back.
-- **Recovery depends on claim type.** Missing-item claims recover at 41.2% against 80.7% for wrong-order claims — and missing-item accounts for **70% of all unrecovered value**. The dispute process works when the whole order is wrong and fails when one item is absent.
+- **Only 57.3% of error charges are recovered.** Of $1,027.46 deducted across 69 claims, $438.60 never came back.
+- **Recovery depends on claim type — but not on how much of the order was wrong.**
+
+  | Claim type | Claims | Charged | Recovered | Leakage | Share of leakage |
+  |---|---:|---:|---:|---:|---:|
+  | `item missing` | 45 | $522.14 | 41.2% | $307.03 | 70.0% |
+  | `incorrect order` | 16 | $428.24 | 80.7% | $82.78 | 18.9% |
+  | `food quality` | 8 | $77.08 | 36.7% | $48.79 | 11.1% |
+
+  Missing-item alone is **70% of all unrecovered value**, so that is where the money is. The tempting reading is that disputes succeed on whole-order failures and fail on single-item ones — but `food quality` is a whole-order complaint and recovers worst of the three, at 36.7%. It is small enough ($77.08 charged) not to move the headline, and 8 claims is a thin base to argue from, so it is reported as a qualifier rather than a finding. What it rules out is the clean scope-based story: the split is not simply whole-order versus single-item.
+
+  Why the three differ is not in this data. A plausible reading is that it tracks what the platform's own record can settle without the customer's account of events — but nothing here tests that, and it is not claimed as a result.
 - **Unit economics:** $108,141.73 gross, 28.49% commission rate, **29.47% effective take rate**, $76,273.19 net.
 
 ## Architecture
@@ -33,7 +43,7 @@ Being explicit about what runs today, because a repo that overstates its own mat
 | Anonymization, ingestion, dbt models, data quality tests | **Running.** Two commands from a clean checkout. |
 | GitHub Actions CI | **Running.** Full build against synthetic fixtures on every push. |
 | Airflow DAG (`dags/`) | **Written, not deployed.** A reference implementation of the intended schedule and task dependencies. Not yet executed against a live scheduler. |
-| Snowflake target (`profiles.yml`) | **Configured, not migrated.** Developed on DuckDB. |
+| Snowflake / other warehouse | **Not configured.** `profiles.yml` defines the DuckDB target only. |
 | Dashboard / serving layer | **Not built.** Results are warehouse tables and a test report. |
 
 ### Star schema
@@ -102,7 +112,7 @@ cd dbt && dbt build
 
 ## Warehouse portability
 
-Developed on DuckDB for fast, credential-free iteration. `profiles.yml` carries a Snowflake target for migration; models are standard SQL with minimal dialect-specific syntax.
+Developed on DuckDB for fast, credential-free iteration. `profiles.yml` defines the DuckDB target only — no second warehouse is configured, and none has been tested. Models are standard SQL with minimal dialect-specific syntax, so porting to Snowflake or another warehouse is a new profile target plus a dialect review rather than a rewrite.
 
 ## Repository layout
 
