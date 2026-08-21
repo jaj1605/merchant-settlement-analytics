@@ -38,6 +38,11 @@ jobs:
       - name: Ingest
         run: python ingestion/ingest.py --src data/anonymized --db warehouse.duckdb
 
+      - name: dbt source freshness
+        run: cd dbt && dbt source freshness --target dev
+        # Not covered by `dbt build`. Runs here because the DAG gates every downstream
+        # task on it, so a broken freshness config would halt the whole pipeline.
+
       - name: dbt build
         run: cd dbt && dbt build --target dev
 

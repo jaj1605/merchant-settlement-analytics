@@ -46,4 +46,7 @@ sources:
         description: Daily sales aggregates supplied by the platform.
 
       - name: _load_log
+        # Written by ingest.py rather than the CSV loader, so its timestamp column is
+        # `loaded_at`, not the `_loaded_at` the source-level default expects.
+        loaded_at_field: loaded_at
         description: Ingestion audit trail — one row per dataset per pipeline run.

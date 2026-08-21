@@ -1,7 +1,17 @@
 """
 Airflow DAG: merchant settlement analytics pipeline.
 
-Flow:  anonymize -> ingest -> dbt run -> dbt test -> freshness -> notify
+STATUS: reference implementation — NOT deployed. This DAG documents the intended
+schedule and task dependencies for running the pipeline on a scheduler. It has never
+been executed against a live Airflow instance, and `apache-airflow` is deliberately
+absent from requirements.txt, so it is not import-checked in CI either — its syntax
+compiles, but the task graph has never been validated against the Airflow API. Treat
+it as a design artifact, not as tested code. The pipeline itself runs as two commands
+(see README) and is exercised end-to-end in GitHub Actions on every push.
+
+Flow:  start -> anonymize -> ingest -> dbt source freshness -> dbt run -> dbt test
+                                                                          |-> dbt docs generate
+                                                                          `-> publish marts
 
 Design decisions worth defending in review:
 
