@@ -1,6 +1,5 @@
 # Requirements — merchant settlement analytics
 
-Written before any code. Consulting work starts with what the client needs, not with a stack.
 
 ## Client and context
 
