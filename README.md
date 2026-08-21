@@ -8,18 +8,8 @@ A full year of settlement data, reconciled two ways:
 
 - **Every weekly payout reconciles to $0.00** — all 72 payouts, stated components against stated net total.
 - **91.9% first-pass match** on the independent order-level roll-up (68 of 74 payout-date × channel groups). All 6 breaks classify to period-boundary cutoff timing. **Zero unexplained.**
-- **Only 57.3% of error charges are recovered.** Of $1,027.46 deducted across 69 claims, $438.60 never came back.
-- **Recovery depends on claim type — but not on how much of the order was wrong.**
-
-  | Claim type | Claims | Charged | Recovered | Leakage | Share of leakage |
-  |---|---:|---:|---:|---:|---:|
-  | `item missing` | 45 | $522.14 | 41.2% | $307.03 | 70.0% |
-  | `incorrect order` | 16 | $428.24 | 80.7% | $82.78 | 18.9% |
-  | `food quality` | 8 | $77.08 | 36.7% | $48.79 | 11.1% |
-
-  Missing-item alone is **70% of all unrecovered value**, so that is where the money is. The tempting reading is that disputes succeed on whole-order failures and fail on single-item ones — but `food quality` is a whole-order complaint and recovers worst of the three, at 36.7%. It is small enough ($77.08 charged) not to move the headline, and 8 claims is a thin base to argue from, so it is reported as a qualifier rather than a finding. What it rules out is the clean scope-based story: the split is not simply whole-order versus single-item.
-
-  Why the three differ is not in this data. A plausible reading is that it tracks what the platform's own record can settle without the customer's account of events — but nothing here tests that, and it is not claimed as a result.
+- **Only 57.3% of error charges are recovered.** Of $1,027 deducted for order problems, $438.60 never came back.
+- **Recovery depends on claim type.** Missing-item claims recover at 41.2% against 80.7% for wrong-order claims — and missing-item accounts for **70% of all unrecovered value**. The dispute process works when the whole order is wrong and fails when one item is absent.
 - **Unit economics:** $108,141.73 gross, 28.49% commission rate, **29.47% effective take rate**, $76,273.19 net.
 
 ## Architecture
@@ -32,7 +22,19 @@ source CSVs ──► anonymize ──► ingest (raw) ──► dbt staging ─
                                                                     fail ──► pipeline stops
 ```
 
-Orchestrated in Airflow. Every pull request runs the full build against synthetic fixtures in GitHub Actions.
+Every pull request runs the full build against synthetic fixtures in GitHub Actions.
+
+### Status
+
+Being explicit about what runs today, because a repo that overstates its own maturity is worse than one that is small and honest.
+
+| Component | Status |
+|---|---|
+| Anonymization, ingestion, dbt models, data quality tests | **Running.** Two commands from a clean checkout. |
+| GitHub Actions CI | **Running.** Full build against synthetic fixtures on every push. |
+| Airflow DAG (`dags/`) | **Written, not deployed.** A reference implementation of the intended schedule and task dependencies. Not yet executed against a live scheduler. |
+| Snowflake target (`profiles.yml`) | **Configured, not migrated.** Developed on DuckDB. |
+| Dashboard / serving layer | **Not built.** Results are warehouse tables and a test report. |
 
 ### Star schema
 
@@ -92,9 +94,9 @@ cd dbt && dbt build
 
 **ELT, not ETL.** The raw layer is a faithful VARCHAR copy of the source. All cleaning, casting, and business logic happens in dbt where it is version-controlled, tested, and reviewable. A source type change can never fail ingestion.
 
-**Idempotent ingestion.** Every row carries a content hash; loads insert only hashes not already present. Re-running after a partial failure is safe, which is what makes automatic retries in Airflow safe.
+**Idempotent ingestion.** Every row carries a content hash; loads insert only hashes not already present. Re-running after a partial failure is safe, which is what would make automatic retries safe under a scheduler.
 
-**Fail closed.** `dbt test` is a separate Airflow task and publishing depends on it. Controls are not advisory.
+**Fail closed.** `dbt test` is a separate step and publishing depends on it — in CI today, and in the DAG design. Controls are not advisory.
 
 **No client data anywhere.** Identifying attributes are replaced with surrogates before ingestion. CI builds against synthetic fixtures that reproduce the *shape* of the source — including a reversal cycle, an unrecovered error charge, and a cutoff break — so the controls are genuinely exercised without client data in the repo.
 
@@ -113,7 +115,7 @@ dbt/
     marts/         fct_* and dim_* — the star schema
   tests/           custom business-rule tests
   macros/          shared casting helpers
-dags/          Airflow DAG
+dags/          Airflow DAG (reference implementation, not yet deployed)
 docs/          requirements.md — written before the code
 .github/       CI workflow
 ```
